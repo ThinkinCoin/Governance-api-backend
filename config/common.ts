@@ -11,6 +11,16 @@ import {
 
 const DEFAULT_LOCAL_MONGO_DB_URI =
   'mongodb://localhost:27017,localhost:27018,localhost:27019/db-aragon?replicaSet=rs0&retryWrites=true&w=majority'
+const MONGO_DB_URI_ENV_KEYS = [
+  'MONGO_DB_URI',
+  'MONGODB_URI',
+  'MONGO_URI',
+  'MONGO_URL',
+  'MONGODB_URL',
+  'MONGO_PRIVATE_URL',
+  'MONGO_PUBLIC_URL',
+  'DATABASE_URL',
+] as const
 
 function stripWrappingQuotes(value: string): string {
   if (
@@ -21,6 +31,22 @@ function stripWrappingQuotes(value: string): string {
   }
 
   return value
+}
+
+function findConfiguredMongoDbUri(sourceConfig: Record<string, any>): {
+  key: (typeof MONGO_DB_URI_ENV_KEYS)[number]
+  value: string
+} | null {
+  for (const key of MONGO_DB_URI_ENV_KEYS) {
+    const rawValue = typeof sourceConfig[key] === 'string' ? sourceConfig[key].trim() : ''
+    const value = stripWrappingQuotes(rawValue)
+
+    if (value) {
+      return { key, value }
+    }
+  }
+
+  return null
 }
 
 function getExecutionContext(sourceConfig: Record<string, any>): {
@@ -43,11 +69,10 @@ function resolveMongoDbUri(
     nodeEnv: IEnumNodeEnvValue
   },
 ): string {
-  const rawConfiguredUri = typeof sourceConfig.MONGO_DB_URI === 'string' ? sourceConfig.MONGO_DB_URI.trim() : ''
-  const configuredUri = stripWrappingQuotes(rawConfiguredUri)
+  const configuredMongoUri = findConfiguredMongoDbUri(sourceConfig)
 
-  if (configuredUri) {
-    return configuredUri
+  if (configuredMongoUri) {
+    return configuredMongoUri.value
   }
 
   const isRemoteEnvironment =
@@ -56,7 +81,10 @@ function resolveMongoDbUri(
     environment === IEnumEnvironment.staging
 
   if (isRemoteEnvironment) {
-    throw new Error('MONGO_DB_URI is required when running outside local or development environments')
+    throw new Error(
+      `MongoDB connection URI is required when running outside local or development environments. ` +
+        `Checked env keys: ${MONGO_DB_URI_ENV_KEYS.join(', ')}`,
+    )
   }
 
   return DEFAULT_LOCAL_MONGO_DB_URI
