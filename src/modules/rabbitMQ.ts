@@ -74,12 +74,10 @@ const RabbitMQ = {
         logger.error('RabbitMQ connect failed', llo({ reason: err }))
         RabbitMQ.stopNoopInterval()
 
-        // Always reject on connect failed if we haven't resolved yet
+        // Keep waiting for the connection manager to retry until either
+        // a real connection happens or the global timeout expires.
         if (!promiseResolved) {
-          promiseResolved = true
-          clearTimeout(connectionTimeout)
           logger.error('RabbitMQ connection failed', llo({ reason: err?.message || 'Unknown error' }))
-          resolve(true)
         }
       })
 
