@@ -1,5 +1,6 @@
 import config from '@config'
 import dayjs from '@helpers/dayjs'
+import { NetworkHelper } from '@helpers/network'
 import * as packageJson from '@package'
 import { type IStatusResponse } from '@types'
 
@@ -10,7 +11,7 @@ const StatusController = {
     service: config.SERVICES.ARAGON_API.NAME,
     nodeVersion: process.version,
     environment: config.ENVIRONMENT,
-    supportedNetworks: config.SUPPORTED_NETWORKS,
+    supportedNetworks: NetworkHelper.supportedNetworks().map(({ networkName }) => networkName),
     appVersionPackage: packageJson.version,
     time: dayjs().format(),
   }),
