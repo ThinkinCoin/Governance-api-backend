@@ -5,7 +5,12 @@ import utils from '@helpers/utils'
 
 export const NetworkHelper = {
   supportedNetworks(): ISupportedNetwork[] {
-    const networks = Object.values(NetworksEnum)
+    const configuredNetworks = Array.isArray(config.SUPPORTED_NETWORKS) ? config.SUPPORTED_NETWORKS : []
+    const allowedNetworks = configuredNetworks.length > 0 ? new Set(configuredNetworks) : null
+    const networks = Object.values(NetworksEnum).filter(networkName => {
+      if (!allowedNetworks) return true
+      return allowedNetworks.has(networkName)
+    })
 
     const result = networks.reduce((acc: any, networkName) => {
       const provider = ProviderModule.getAnyRpcProvider(networkName)
