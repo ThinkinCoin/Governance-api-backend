@@ -17,15 +17,30 @@ import PairDataModule from '@modules/pairData'
 import NameResolver from '@helpers/nameResolver'
 import DaoEnsHelper from '@helpers/daoEns'
 import { ethers } from 'ethers'
+import logger from '@logger'
+
+const llo = logger.logMeta.bind(null, { service: 'api:controllers:DaoController' })
 
 const DaoController = {
   getDaosWithPagination: async (
     paginationParams: IPaginationParams,
     extraParams: IDaoExtraParams,
   ): Promise<IPaginatedResult<IDaoResponse>> => {
-    paginationParams = await PairDataModule.pairFromPaginationParams(paginationParams)
-    const extraQueryData = await PairDataModule.pairExtraQueryData(extraParams)
-    return await Models.Dao.findWithPagination({ extraParams, paginationParams, extraQueryData })
+    try {
+      paginationParams = await PairDataModule.pairFromPaginationParams(paginationParams)
+      const extraQueryData = await PairDataModule.pairExtraQueryData(extraParams)
+      return await Models.Dao.findWithPagination({ extraParams, paginationParams, extraQueryData })
+    } catch (error) {
+      logger.error(
+        'Error getting DAOs with pagination',
+        llo({
+          paginationParams,
+          extraParams,
+          error,
+        }),
+      )
+      throw error
+    }
   },
 
   getDaoById: async (id: string): Promise<IDaoResponse> => {

@@ -339,14 +339,18 @@ export default class Dao extends Model {
                   '$$value',
                   {
                     $reduce: {
-                      input: { $ifNull: ['$$this.settings.stages', []] },
+                      input: {
+                        $cond: [{ $isArray: '$$this.settings.stages' }, '$$this.settings.stages', []],
+                      },
                       initialValue: [],
                       in: {
                         $concatArrays: [
                           '$$value',
                           {
                             $map: {
-                              input: { $ifNull: ['$$this.plugins', []] },
+                              input: {
+                                $cond: [{ $isArray: '$$this.plugins' }, '$$this.plugins', []],
+                              },
                               as: 'stagePlugin',
                               in: '$$stagePlugin.address',
                             },
@@ -643,14 +647,18 @@ export default class Dao extends Model {
                   '$$value',
                   {
                     $reduce: {
-                      input: { $ifNull: ['$$this.settings.stages', []] },
+                      input: {
+                        $cond: [{ $isArray: '$$this.settings.stages' }, '$$this.settings.stages', []],
+                      },
                       initialValue: [],
                       in: {
                         $concatArrays: [
                           '$$value',
                           {
                             $map: {
-                              input: { $ifNull: ['$$this.plugins', []] },
+                              input: {
+                                $cond: [{ $isArray: '$$this.plugins' }, '$$this.plugins', []],
+                              },
                               as: 'stagePlugin',
                               in: '$$stagePlugin.address',
                             },

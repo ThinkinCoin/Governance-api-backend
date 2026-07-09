@@ -2,6 +2,9 @@ import { type Next } from 'koa'
 import { type RouterContext } from '@koa/router'
 import { ErrorKeyEnum, type ICustomError, type IErrorResponse } from '@types'
 import { ERRORS } from '@errors'
+import logger from '@logger'
+
+const llo = logger.logMeta.bind(null, { service: 'middleware:error' })
 
 export default () => async (ctx: RouterContext, next: Next) => {
   try {
@@ -33,5 +36,19 @@ export default () => async (ctx: RouterContext, next: Next) => {
     response.status = status
     ctx.status = status
     ctx.body = response
+
+    logger.error(
+      'Unhandled API request error',
+      llo({
+        status,
+        method: ctx.method,
+        path: ctx.path,
+        query: ctx.query,
+        code: response.code,
+        errorName: error?.name,
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+      }),
+    )
   }
 }
