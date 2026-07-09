@@ -4,13 +4,14 @@ import { TaskSchedulerState } from '@state/taskSchedulerState'
 import { NetworkHelper } from '@helpers/network'
 import configIndexer from '@indexer/configIndexer'
 import utils from '@helpers/utils'
-import { BlockchainLogCrawler } from '@modules/crawlers'
+import { BlockchainLogCrawler, ProgressTracker } from '@modules/crawlers'
 import { SyncAll } from '@indexer/syncAll'
 import config from '@config'
 import PoolingCrawler from '@modules/poolingCrawler'
 import { Models } from '@dbModels'
 import RabbitMQHelper from '@helpers/rabbitMQ'
 import ConfigIndexerHelper from '@helpers/configIndexer'
+import Web3Helper from '@helpers/web3'
 import HarmonyVotingFinalizer from './harmonyVotingFinalizer'
 import { resolveActiveContractsVersion } from '@helpers/contractsConfigVersion'
 
@@ -129,6 +130,7 @@ const AragonIndexerService: IService & { repeaters: any } = {
     await Promise.all(
       networks.map(async ({ networkName }) => {
         const logService = ConfigIndexerHelper.builders.indexer(networkName)
+        const initialBlock = config.NODES[utils.networkToAragon(networkName)].FROM_BLOCK
 
         const indexerAddresses = await getIndexerCoreAddresses(networkName)
 
@@ -147,8 +149,42 @@ const AragonIndexerService: IService & { repeaters: any } = {
           service: logService,
         })
 
+        let shouldReplayHistorical = !existingConfig
+
+        if (existingConfig) {
+          const daoCount = await Models.Dao.countDocuments({ network: networkName })
+
+          if (daoCount === 0) {
+            const latestBlock = await Web3Helper.getBlockNumber('latest', networkName)
+            const confirmationBlocks = config.NODES[utils.networkToAragon(networkName)].CONFIRMATION_BLOCKS ?? 0
+            const nearChainHead = existingConfig.lastSync >= Math.max(initialBlock, latestBlock - confirmationBlocks - 5)
+
+            if (nearChainHead) {
+              logger.warn(
+                'Indexer progress exists at chain head but DAO collection is empty; resetting historical progress',
+                llo({
+                  networkName,
+                  logService,
+                  initialBlock,
+                  lastSync: existingConfig.lastSync,
+                  latestBlock,
+                }),
+              )
+
+              const progressTracker = new ProgressTracker({
+                network: networkName,
+                service: logService,
+                initialBlock,
+              })
+
+              await progressTracker.resetProgress()
+              shouldReplayHistorical = true
+            }
+          }
+        }
+
         // sync historical data
-        if (!existingConfig) {
+        if (shouldReplayHistorical) {
           logger.info('HistoricalCrawler start', llo({ networkName }))
           const historicalCrawler = new BlockchainLogCrawler({
             onlyHistorical: true,
