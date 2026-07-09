@@ -1,11 +1,74 @@
 import utils from '@helpers/utils'
-import { type IConfig, NetworksEnum, SupportedEnsNetworksEnum } from '@types'
+import {
+  type IConfig,
+  IEnumEnvironment,
+  type IEnumEnvironmentValue,
+  IEnumNodeEnv,
+  type IEnumNodeEnvValue,
+  NetworksEnum,
+  SupportedEnsNetworksEnum,
+} from '@types'
+
+const DEFAULT_LOCAL_MONGO_DB_URI =
+  'mongodb://localhost:27017,localhost:27018,localhost:27019/db-aragon?replicaSet=rs0&retryWrites=true&w=majority'
+
+function stripWrappingQuotes(value: string): string {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1).trim()
+  }
+
+  return value
+}
+
+function getExecutionContext(sourceConfig: Record<string, any>): {
+  environment: IEnumEnvironmentValue
+  nodeEnv: IEnumNodeEnvValue
+} {
+  return {
+    environment: utils.configParser(sourceConfig, 'string', 'ENVIRONMENT', IEnumEnvironment.local),
+    nodeEnv: utils.configParser(sourceConfig, 'string', 'NODE_ENV', IEnumNodeEnv.development),
+  }
+}
+
+function resolveMongoDbUri(
+  sourceConfig: Record<string, any>,
+  {
+    environment,
+    nodeEnv,
+  }: {
+    environment: IEnumEnvironmentValue
+    nodeEnv: IEnumNodeEnvValue
+  },
+): string {
+  const rawConfiguredUri = typeof sourceConfig.MONGO_DB_URI === 'string' ? sourceConfig.MONGO_DB_URI.trim() : ''
+  const configuredUri = stripWrappingQuotes(rawConfiguredUri)
+
+  if (configuredUri) {
+    return configuredUri
+  }
+
+  const isRemoteEnvironment =
+    nodeEnv === IEnumNodeEnv.production ||
+    environment === IEnumEnvironment.production ||
+    environment === IEnumEnvironment.staging
+
+  if (isRemoteEnvironment) {
+    throw new Error('MONGO_DB_URI is required when running outside local or development environments')
+  }
+
+  return DEFAULT_LOCAL_MONGO_DB_URI
+}
 
 const getConfigObject = (sourceConfig: Record<string, any>): IConfig => {
+  const { environment, nodeEnv } = getExecutionContext(sourceConfig)
+
   return {
     APP_NAME: utils.configParser(sourceConfig, 'string', 'APP_NAME', 'Aragon Backend'),
-    ENVIRONMENT: utils.configParser(sourceConfig, 'string', 'ENVIRONMENT', 'local'),
-    NODE_ENV: utils.configParser(sourceConfig, 'string', 'NODE_ENV', 'development'),
+    ENVIRONMENT: environment,
+    NODE_ENV: nodeEnv,
     TIMEZONE: utils.configParser(sourceConfig, 'string', 'TIMEZONE', 'Europe/London'),
     REMOTE_EXECUTION: utils.configParser(sourceConfig, 'bool', 'REMOTE_EXECUTION', false),
     PROXY: utils.configParser(sourceConfig, 'string', 'PROXY', null),
@@ -613,12 +676,7 @@ const getConfigObject = (sourceConfig: Record<string, any>): IConfig => {
 
     MONGO_DB: {
       NAME: utils.configParser(sourceConfig, 'string', 'MONGO_DB_NAME', 'db-aragon'),
-      URI: utils.configParser(
-        sourceConfig,
-        'string',
-        'MONGO_DB_URI',
-        'mongodb://localhost:27017,localhost:27018,localhost:27019/db-aragon?replicaSet=rs0&retryWrites=true&w=majority',
-      ),
+      URI: resolveMongoDbUri(sourceConfig, { environment, nodeEnv }),
       DEBUGGER: utils.configParser(sourceConfig, 'bool', 'MONGO_DB_DEBUGGER', false),
       RETRY_CONCURRENT_INTERVAL: utils.configParser(sourceConfig, 'number', 'MONGO_DB_RETRY_CONCURRENT_INTERVAL', 50),
       RETRY_CONCURRENT_TIME: utils.configParser(sourceConfig, 'number', 'MONGO_DB_RETRY_CONCURRENT_TIME', 100),

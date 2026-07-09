@@ -7,6 +7,22 @@ import { type IOptionService } from '@types'
 
 const llo = logger.logMeta.bind(null, { service: 'mongo' })
 
+function describeMongoTarget(uri: string): string {
+  const trimmed = uri.trim()
+  if (!trimmed) return 'unconfigured'
+
+  const protocolMatch = trimmed.match(/^(mongodb(?:\+srv)?):\/\//i)
+  const protocol = protocolMatch?.[1] || 'mongodb'
+  const withoutProtocol = trimmed.replace(/^[a-z0-9+.-]+:\/\//i, '')
+  const slashIndex = withoutProtocol.indexOf('/')
+  const hostSection = slashIndex === -1 ? withoutProtocol : withoutProtocol.slice(0, slashIndex)
+  const pathSection = slashIndex === -1 ? '' : withoutProtocol.slice(slashIndex + 1)
+  const hosts = hostSection.includes('@') ? hostSection.slice(hostSection.lastIndexOf('@') + 1) : hostSection
+  const database = pathSection ? pathSection.split('?')[0] : ''
+
+  return `${protocol}://${hosts}${database ? `/${database}` : ''}`
+}
+
 const mongoOptions: ConnectOptions = {
   dbName: config.MONGO_DB.NAME,
   autoIndex: false, // Disable automatic index creation
@@ -116,7 +132,7 @@ const Mongo = {
       logger.verbose(
         'MongoDB try connecting',
         llo({
-          url: config.MONGO_DB.URI,
+          target: describeMongoTarget(config.MONGO_DB.URI),
           name: config.MONGO_DB.NAME,
           syncIndexes: options?.mongoSync || false,
         }),

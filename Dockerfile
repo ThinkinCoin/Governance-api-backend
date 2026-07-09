@@ -33,6 +33,7 @@ WORKDIR /usr/src/app
 
 # Set production environment for runtime
 ENV NODE_ENV=production
+ENV ENVIRONMENT=production
 
 # Copy node_modules from the builder stage (includes ALL dependencies)
 COPY --from=builder /usr/src/app/node_modules ./node_modules
