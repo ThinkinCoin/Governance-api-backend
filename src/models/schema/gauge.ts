@@ -7,7 +7,6 @@ import {
   type IPaginatedResult,
   type IPaginationParams,
   NetworksEnum,
-  type DaoResourceLink,
   IGaugeStatus,
 } from '@types'
 import { Model, type SaveOptions } from 'mongoose'
@@ -17,6 +16,14 @@ import ModelUtils from '@models/utils/models'
 import { AggregationQueryHelper } from '@models/utils/aggregation'
 
 const customName = ICollectionNames.Gauge
+
+class Link {
+  @prop({ type: () => String, default: null })
+  public name!: string
+
+  @prop({ type: () => String, default: null })
+  public url!: string
+}
 
 @modelOptions({
   schemaOptions: {
@@ -59,8 +66,8 @@ export default class Gauge extends Model {
   @prop({ type: () => String, default: null })
   public description!: string
 
-  @prop({ type: () => Array, default: null })
-  public links!: DaoResourceLink[]
+  @prop({ type: () => [Link], _id: false, default: [] })
+  public links?: Link[]
 
   @prop({ type: () => String, default: null })
   public avatar!: string

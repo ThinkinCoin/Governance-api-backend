@@ -63,8 +63,8 @@ export default class CampaignReward extends Model {
   @prop({ type: () => [RewardStatus], _id: false, default: [] })
   public claims!: RewardStatus[]
 
-  @prop({ type: () => Array, default: null })
-  public proof!: [string] | null
+  @prop({ type: () => [String], default: null })
+  public proof!: string[] | null
 
   @prop({ type: () => String, default: null })
   public leaf!: string | null
