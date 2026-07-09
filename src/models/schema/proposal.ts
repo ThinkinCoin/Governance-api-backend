@@ -671,7 +671,9 @@ export default class Proposal extends Model {
         $addFields: {
           'settings.stages': {
             $map: {
-              input: { $ifNull: ['$settings.stages', []] },
+              input: {
+                $cond: [{ $isArray: '$settings.stages' }, '$settings.stages', []],
+              },
               as: 'stage',
               in: {
                 $mergeObjects: [
@@ -679,26 +681,34 @@ export default class Proposal extends Model {
                   {
                     plugins: {
                       $map: {
-                        input: { $ifNull: ['$$stage.plugins', []] },
+                        input: {
+                          $cond: [{ $isArray: '$$stage.plugins' }, '$$stage.plugins', []],
+                        },
                         as: 'stagePlugin',
                         in: {
                           $let: {
                             vars: {
                               // Remove unwanted fields from $$stagePlugin
                               stagePluginClean: {
-                                $arrayToObject: {
-                                  $filter: {
-                                    input: {
-                                      $objectToArray: '$$stagePlugin',
-                                    },
-                                    as: 'field',
-                                    cond: {
-                                      $not: {
-                                        $in: ['$$field.k', ['isManual', 'allowedBody']],
+                                $cond: [
+                                  { $eq: [{ $type: '$$stagePlugin' }, 'object'] },
+                                  {
+                                    $arrayToObject: {
+                                      $filter: {
+                                        input: {
+                                          $objectToArray: '$$stagePlugin',
+                                        },
+                                        as: 'field',
+                                        cond: {
+                                          $not: {
+                                            $in: ['$$field.k', ['isManual', 'allowedBody']],
+                                          },
+                                        },
                                       },
                                     },
                                   },
-                                },
+                                  {},
+                                ],
                               },
                               // Find the matched plugin document
                               matchedPlugin: {
@@ -708,7 +718,10 @@ export default class Proposal extends Model {
                                       input: '$allPluginDocs',
                                       as: 'pluginDoc',
                                       cond: {
-                                        $eq: ['$$pluginDoc.address', '$$stagePlugin.address'],
+                                        $and: [
+                                          { $eq: [{ $type: '$$stagePlugin' }, 'object'] },
+                                          { $eq: ['$$pluginDoc.address', '$$stagePlugin.address'] },
+                                        ],
                                       },
                                     },
                                   },
@@ -1001,7 +1014,9 @@ export default class Proposal extends Model {
         $addFields: {
           'settings.stages': {
             $map: {
-              input: { $ifNull: ['$settings.stages', []] },
+              input: {
+                $cond: [{ $isArray: '$settings.stages' }, '$settings.stages', []],
+              },
               as: 'stage',
               in: {
                 $mergeObjects: [
@@ -1009,26 +1024,34 @@ export default class Proposal extends Model {
                   {
                     plugins: {
                       $map: {
-                        input: { $ifNull: ['$$stage.plugins', []] },
+                        input: {
+                          $cond: [{ $isArray: '$$stage.plugins' }, '$$stage.plugins', []],
+                        },
                         as: 'stagePlugin',
                         in: {
                           $let: {
                             vars: {
                               // Remove unwanted fields from $$stagePlugin
                               stagePluginClean: {
-                                $arrayToObject: {
-                                  $filter: {
-                                    input: {
-                                      $objectToArray: '$$stagePlugin',
-                                    },
-                                    as: 'field',
-                                    cond: {
-                                      $not: {
-                                        $in: ['$$field.k', ['isManual', 'allowedBody']],
+                                $cond: [
+                                  { $eq: [{ $type: '$$stagePlugin' }, 'object'] },
+                                  {
+                                    $arrayToObject: {
+                                      $filter: {
+                                        input: {
+                                          $objectToArray: '$$stagePlugin',
+                                        },
+                                        as: 'field',
+                                        cond: {
+                                          $not: {
+                                            $in: ['$$field.k', ['isManual', 'allowedBody']],
+                                          },
+                                        },
                                       },
                                     },
                                   },
-                                },
+                                  {},
+                                ],
                               },
                               // Find the matched plugin document
                               matchedPlugin: {
@@ -1038,7 +1061,10 @@ export default class Proposal extends Model {
                                       input: '$allPluginDocs',
                                       as: 'pluginDoc',
                                       cond: {
-                                        $eq: ['$$pluginDoc.address', '$$stagePlugin.address'],
+                                        $and: [
+                                          { $eq: [{ $type: '$$stagePlugin' }, 'object'] },
+                                          { $eq: ['$$pluginDoc.address', '$$stagePlugin.address'] },
+                                        ],
                                       },
                                     },
                                   },

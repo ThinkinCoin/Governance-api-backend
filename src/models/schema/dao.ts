@@ -421,7 +421,9 @@ export default class Dao extends Model {
                             {
                               stages: {
                                 $map: {
-                                  input: { $ifNull: ['$$plugin.settings.stages', []] },
+                                  input: {
+                                    $cond: [{ $isArray: '$$plugin.settings.stages' }, '$$plugin.settings.stages', []],
+                                  },
                                   as: 'stage',
                                   in: {
                                     $mergeObjects: [
@@ -429,25 +431,33 @@ export default class Dao extends Model {
                                       {
                                         plugins: {
                                           $map: {
-                                            input: { $ifNull: ['$$stage.plugins', []] },
+                                            input: {
+                                              $cond: [{ $isArray: '$$stage.plugins' }, '$$stage.plugins', []],
+                                            },
                                             as: 'stagePlugin',
                                             in: {
                                               $let: {
                                                 vars: {
                                                   stagePluginClean: {
-                                                    $arrayToObject: {
-                                                      $filter: {
-                                                        input: {
-                                                          $objectToArray: '$$stagePlugin',
-                                                        },
-                                                        as: 'field',
-                                                        cond: {
-                                                          $not: {
-                                                            $in: ['$$field.k', ['isManual', 'allowedBody']],
+                                                    $cond: [
+                                                      { $eq: [{ $type: '$$stagePlugin' }, 'object'] },
+                                                      {
+                                                        $arrayToObject: {
+                                                          $filter: {
+                                                            input: {
+                                                              $objectToArray: '$$stagePlugin',
+                                                            },
+                                                            as: 'field',
+                                                            cond: {
+                                                              $not: {
+                                                                $in: ['$$field.k', ['isManual', 'allowedBody']],
+                                                              },
+                                                            },
                                                           },
                                                         },
                                                       },
-                                                    },
+                                                      {},
+                                                    ],
                                                   },
                                                   matchedPlugin: {
                                                     $arrayElemAt: [
@@ -456,7 +466,10 @@ export default class Dao extends Model {
                                                           input: '$allPluginDocs',
                                                           as: 'pluginDoc',
                                                           cond: {
-                                                            $eq: ['$$pluginDoc.address', '$$stagePlugin.address'],
+                                                            $and: [
+                                                              { $eq: [{ $type: '$$stagePlugin' }, 'object'] },
+                                                              { $eq: ['$$pluginDoc.address', '$$stagePlugin.address'] },
+                                                            ],
                                                           },
                                                         },
                                                       },
@@ -712,7 +725,9 @@ export default class Dao extends Model {
                             {
                               stages: {
                                 $map: {
-                                  input: { $ifNull: ['$$plugin.settings.stages', []] },
+                                  input: {
+                                    $cond: [{ $isArray: '$$plugin.settings.stages' }, '$$plugin.settings.stages', []],
+                                  },
                                   as: 'stage',
                                   in: {
                                     $mergeObjects: [
@@ -720,25 +735,33 @@ export default class Dao extends Model {
                                       {
                                         plugins: {
                                           $map: {
-                                            input: { $ifNull: ['$$stage.plugins', []] },
+                                            input: {
+                                              $cond: [{ $isArray: '$$stage.plugins' }, '$$stage.plugins', []],
+                                            },
                                             as: 'stagePlugin',
                                             in: {
                                               $let: {
                                                 vars: {
                                                   stagePluginClean: {
-                                                    $arrayToObject: {
-                                                      $filter: {
-                                                        input: {
-                                                          $objectToArray: '$$stagePlugin',
-                                                        },
-                                                        as: 'field',
-                                                        cond: {
-                                                          $not: {
-                                                            $in: ['$$field.k', ['isManual', 'allowedBody']],
+                                                    $cond: [
+                                                      { $eq: [{ $type: '$$stagePlugin' }, 'object'] },
+                                                      {
+                                                        $arrayToObject: {
+                                                          $filter: {
+                                                            input: {
+                                                              $objectToArray: '$$stagePlugin',
+                                                            },
+                                                            as: 'field',
+                                                            cond: {
+                                                              $not: {
+                                                                $in: ['$$field.k', ['isManual', 'allowedBody']],
+                                                              },
+                                                            },
                                                           },
                                                         },
                                                       },
-                                                    },
+                                                      {},
+                                                    ],
                                                   },
                                                   matchedPlugin: {
                                                     $arrayElemAt: [
@@ -747,7 +770,10 @@ export default class Dao extends Model {
                                                           input: '$allPluginDocs',
                                                           as: 'pluginDoc',
                                                           cond: {
-                                                            $eq: ['$$pluginDoc.address', '$$stagePlugin.address'],
+                                                            $and: [
+                                                              { $eq: [{ $type: '$$stagePlugin' }, 'object'] },
+                                                              { $eq: ['$$pluginDoc.address', '$$stagePlugin.address'] },
+                                                            ],
                                                           },
                                                         },
                                                       },
