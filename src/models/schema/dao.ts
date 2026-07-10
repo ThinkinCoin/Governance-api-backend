@@ -332,7 +332,9 @@ export default class Dao extends Model {
         $addFields: {
           allPluginAddresses: {
             $reduce: {
-              input: '$plugins',
+              input: {
+                $cond: [{ $isArray: '$plugins' }, '$plugins', []],
+              },
               initialValue: [],
               in: {
                 $concatArrays: [
@@ -410,7 +412,9 @@ export default class Dao extends Model {
         $addFields: {
           plugins: {
             $map: {
-              input: '$plugins',
+              input: {
+                $cond: [{ $isArray: '$plugins' }, '$plugins', []],
+              },
               as: 'plugin',
               in: {
                 $mergeObjects: [
@@ -467,7 +471,9 @@ export default class Dao extends Model {
                                                     $arrayElemAt: [
                                                       {
                                                         $filter: {
-                                                          input: '$allPluginDocs',
+                                                          input: {
+                                                            $cond: [{ $isArray: '$allPluginDocs' }, '$allPluginDocs', []],
+                                                          },
                                                           as: 'pluginDoc',
                                                           cond: {
                                                             $and: [
@@ -640,7 +646,9 @@ export default class Dao extends Model {
         $addFields: {
           allPluginAddresses: {
             $reduce: {
-              input: '$plugins',
+              input: {
+                $cond: [{ $isArray: '$plugins' }, '$plugins', []],
+              },
               initialValue: [],
               in: {
                 $concatArrays: [
@@ -718,7 +726,9 @@ export default class Dao extends Model {
         $addFields: {
           plugins: {
             $map: {
-              input: '$plugins',
+              input: {
+                $cond: [{ $isArray: '$plugins' }, '$plugins', []],
+              },
               as: 'plugin',
               in: {
                 $mergeObjects: [
@@ -775,7 +785,9 @@ export default class Dao extends Model {
                                                     $arrayElemAt: [
                                                       {
                                                         $filter: {
-                                                          input: '$allPluginDocs',
+                                                          input: {
+                                                            $cond: [{ $isArray: '$allPluginDocs' }, '$allPluginDocs', []],
+                                                          },
                                                           as: 'pluginDoc',
                                                           cond: {
                                                             $and: [
