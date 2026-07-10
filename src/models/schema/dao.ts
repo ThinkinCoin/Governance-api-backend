@@ -23,6 +23,7 @@ import { Models } from '@dbModels'
 import logger from '@logger'
 
 const customName = ICollectionNames.Dao
+const llo = logger.logMeta.bind(null, { service: 'models:Dao' })
 
 class Link {
   @prop({ type: () => String, default: null })
@@ -289,7 +290,7 @@ export default class Dao extends Model {
             {
               $match: {
                 $expr: {
-                  $gte: [{ $size: '$plugins' }, 1],
+                  $gte: [{ $size: { $cond: [{ $isArray: '$plugins' }, '$plugins', []] } }, 1],
                 },
               },
             },
@@ -533,9 +534,41 @@ export default class Dao extends Model {
 
     const currentPage = request.skip / request.limit + 1
 
+    const countQuery = [{ $match: filter }, { $count: 'totalRecords' }]
+    const logContext = {
+      filter,
+      request,
+      extraParams,
+      extraQueryDataKeys: Object.keys(extraQueryData ?? {}),
+    }
+
     const [data, totalRecords] = await Promise.all([
-      this.aggregate(aggQuery),
-      this.aggregate([{ $match: filter }, { $count: 'totalRecords' }]),
+      this.aggregate(aggQuery).catch(error => {
+        logger.error(
+          'Dao.findWithPagination data aggregation failed',
+          llo({
+            ...logContext,
+            aggStages: aggQuery.map(stage => Object.keys(stage)[0]),
+            errorName: error?.name,
+            errorMessage: error?.message,
+            errorStack: error?.stack,
+          }),
+        )
+        throw error
+      }),
+      this.aggregate(countQuery).catch(error => {
+        logger.error(
+          'Dao.findWithPagination count aggregation failed',
+          llo({
+            ...logContext,
+            countStages: countQuery.map(stage => Object.keys(stage)[0]),
+            errorName: error?.name,
+            errorMessage: error?.message,
+            errorStack: error?.stack,
+          }),
+        )
+        throw error
+      }),
     ])
 
     const _totalRecords = totalRecords?.[0]?.totalRecords ?? 0
