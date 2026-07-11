@@ -6,6 +6,20 @@ import { EnumQueueName } from '@types'
 
 const llo = logger.logMeta.bind(null, { service: 'rabbitmq' })
 
+function describeRabbitTarget(uri: string): string {
+  const trimmed = uri.trim()
+  if (!trimmed) return 'unconfigured'
+
+  const protocol = trimmed.match(/^amqps?:\/\//i)?.[0] || 'amqp://'
+  const withoutProtocol = trimmed.replace(/^[a-z0-9+.-]+:\/\//i, '')
+  const slashIndex = withoutProtocol.indexOf('/')
+  const authority = slashIndex === -1 ? withoutProtocol : withoutProtocol.slice(0, slashIndex)
+  const host = authority.includes('@') ? authority.slice(authority.lastIndexOf('@') + 1) : authority
+  const vhost = slashIndex === -1 ? '' : withoutProtocol.slice(slashIndex + 1).split('?')[0]
+
+  return `${protocol}${host}${vhost ? `/${vhost}` : ''}`
+}
+
 const RabbitMQ = {
   connection: null as AmqpConnectionManager | null,
   channelsMap: new Map<EnumQueueName, ChannelWrapper>(),
@@ -25,7 +39,7 @@ const RabbitMQ = {
         logger.error(
           'RabbitMQ connection timeout',
           llo({
-            uri: config.RABBITMQ.URI,
+            target: describeRabbitTarget(config.RABBITMQ.URI),
             timeout: config.RABBITMQ.TIMEOUT,
           }),
         )
@@ -48,7 +62,7 @@ const RabbitMQ = {
 
       RabbitMQ.connection.on('connect', () => {
         clearTimeout(connectionTimeout)
-        logger.info('RabbitMQ connected', llo({ uri: config.RABBITMQ.URI }))
+        logger.info('RabbitMQ connected', llo({ target: describeRabbitTarget(config.RABBITMQ.URI) }))
         RabbitMQ.startNoopInterval()
 
         // Only resolve once
@@ -119,7 +133,7 @@ const RabbitMQ = {
   } {
     return {
       connected: RabbitMQ.isConnected(),
-      uri: config.RABBITMQ.URI,
+      uri: describeRabbitTarget(config.RABBITMQ.URI),
       channels: RabbitMQ.channelsMap.size,
     }
   },

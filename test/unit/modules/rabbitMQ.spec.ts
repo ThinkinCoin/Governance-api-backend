@@ -280,17 +280,23 @@ describe('Modules: RabbitMQ', () => {
 
   describe('getStatus', () => {
     it('should return correct status', () => {
+      const originalUri = config.RABBITMQ.URI
+      config.RABBITMQ.URI = 'amqp://user:secret@rabbitmq:5672/vhost?heartbeat=30'
       RabbitMQ.connection = mockConnection
       mockConnection.isConnected.returns(true)
       RabbitMQ.channelsMap.set(EnumQueueName.contractInfo, mockChannel)
 
-      const status = RabbitMQ.getStatus()
+      try {
+        const status = RabbitMQ.getStatus()
 
-      expect(status).to.deep.equal({
-        connected: true,
-        uri: config.RABBITMQ.URI,
-        channels: 1,
-      })
+        expect(status).to.deep.equal({
+          connected: true,
+          uri: 'amqp://rabbitmq:5672/vhost',
+          channels: 1,
+        })
+      } finally {
+        config.RABBITMQ.URI = originalUri
+      }
     })
   })
 

@@ -5,6 +5,7 @@ import AragonAPIService from '@services/aragon-api/index'
 import Koa from 'koa'
 import logger from '@logger'
 import config from '@config'
+import { EnumConnection } from '@types'
 
 describe('AragonAPI: index', () => {
   let sandbox: SinonSandbox
@@ -15,6 +16,13 @@ describe('AragonAPI: index', () => {
 
   afterEach(() => {
     sandbox?.restore()
+  })
+
+  it('declares RabbitMQ because public routes use worker queues', () => {
+    expect(AragonAPIService.NEED_CONNECTIONS).to.deep.equal([
+      EnumConnection.MONGODB,
+      EnumConnection.RABBITMQ,
+    ])
   })
 
   describe('start', () => {
